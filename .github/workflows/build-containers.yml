@@ -10,7 +10,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: cloudstack-server
+  IMAGE_NAME: foundation-io/cloudstack-server
   CLOUDSTACK_VERSION: "4.21"
   DOCKER_FILE: Dockerfile.alma
 
