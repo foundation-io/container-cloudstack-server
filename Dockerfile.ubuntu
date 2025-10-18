@@ -1,0 +1,68 @@
+FROM ubuntu:24.04
+
+ARG CLOUDSTACK_VERSION=4.21
+
+ENV CLOUDSTACK_VERSION=${CLOUDSTACK_VERSION}
+
+# Install required packages
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    openjdk-11-jdk \
+    python3 \
+    python3-pip \
+    supervisor \
+    wget \
+    gnupg2 \
+    openssh-client \
+    mysql-client \
+    iproute2 \
+    net-tools \
+    sudo \
+    tree \
+    nano \
+    procps \
+    lsb-release \
+    ca-certificates \
+    apt-transport-https && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Add CloudStack repository key and repository
+RUN wget -O - https://download.cloudstack.org/release.asc | apt-key add - && \
+    echo "deb https://download.cloudstack.org/ubuntu $(lsb_release -sc) ${CLOUDSTACK_VERSION}" > /etc/apt/sources.list.d/cloudstack.list
+
+# Install CloudStack packages
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    cloudstack-management \
+    cloudstack-usage && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create cloud user for CloudStack
+RUN useradd -r -d /var/lib/cloudstack/management -s /bin/sh -c "CloudStack cloud user" cloud || true
+
+# Create necessary directories
+RUN mkdir -p /var/lib/mysql /var/run/mysqld /var/log/cloudstack/management /var/log/cloudstack/usage && \
+    mkdir -p /var/lib/cloudstack/management && \
+    chown -R cloud:cloud /var/lib/cloudstack /var/log/cloudstack || true
+
+# Fixup for Usage Server
+RUN ln -s /etc/cloudstack/management/key /etc/cloudstack/usage/key || true
+
+# Copy configuration files
+COPY supervisord.conf /etc/supervisord.conf
+COPY docker-entrypoint.sh /usr/local/bin/
+COPY start-cloudstack.sh /usr/local/bin/
+
+# Set permissions
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh /usr/local/bin/start-cloudstack.sh
+
+# Expose ports
+EXPOSE 8080 8250 8251 9090 8096
+
+# Volumes for persistent data
+VOLUME ["/var/lib/cloudstack", "/var/log/cloudstack"]
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["supervisord", "-n", "-c", "/etc/supervisord.conf"]

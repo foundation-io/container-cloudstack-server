@@ -1,0 +1,58 @@
+FROM almalinux:9.6
+
+ARG CLOUDSTACK_VERSION=4.21
+
+ENV CLOUDSTACK_VERSION=${CLOUDSTACK_VERSION}
+
+# Install required packages
+RUN dnf -y install epel-release && \
+    dnf -y update && \
+    dnf -y install \
+    java-11-openjdk \
+    python3 \
+    python3-pip \
+    mysql-server \
+    mysql \
+    supervisor \
+    wget \
+    iproute \
+    net-tools \
+    sudo \
+    tree \
+    nano \
+    procps \
+    dnf-plugins-core && \
+    dnf clean all
+
+# Add CloudStack repository and install
+# NOTE: Workaround for cloudstack-common installation on aarch64 is to manually
+# install the package and instruct rpm to not check/require dependencies.
+# Please see https://github.com/apache/cloudstack/pull/10057
+# for notes and details about the issue and workaround.
+# Likely this will be fixed in 4.22; we shall wait and see.
+COPY cloudstack.repo /etc/yum.repos.d/cloudstack.repo
+RUN sed -i -e "s/VERSION/${CLOUDSTACK_VERSION}/g" /etc/yum.repos.d/cloudstack.repo && \
+    dnf download cloudstack-common && \
+    rpm -ivh --nodeps ./cloudstack-common*.rpm && rm ./cloudstack-common*.rpm && \
+    dnf -y install cloudstack-management cloudstack-usage && \
+    dnf clean all
+
+# Create necessary directories
+RUN mkdir -p /var/log/cloudstack/management /var/log/cloudstack/usage
+
+# Copy configuration files
+COPY supervisord.conf /etc/supervisord.conf
+COPY docker-entrypoint.sh /usr/local/bin/
+COPY start-cloudstack.sh /usr/local/bin/
+
+# Set permissions
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh /usr/local/bin/start-cloudstack.sh
+
+# Expose ports
+EXPOSE 8080 8250 8251 9090 8096
+
+# Volumes for persistent data
+VOLUME ["/var/lib/cloudstack", "/var/log/cloudstack"]
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["supervisord", "-n", "-c", "/etc/supervisord.conf"]

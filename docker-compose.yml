@@ -1,0 +1,73 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mariadb:10.11
+    container_name: cloudstack-mysql
+    hostname: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MYSQL_USER: cloud
+      MYSQL_PASSWORD: ${DB_PASSWORD:-cloud}
+      # Allow root login from any host
+      MYSQL_ROOT_HOST: "%"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${DB_ROOT_PASSWORD:-root}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command: --bind-address=0.0.0.0 --skip-name-resolve --max-connections=500 --max-allowed-packet=64M
+
+  cloudstack:
+    build:
+      context: .
+      dockerfile: Dockerfile.alma
+      args:
+        CLOUDSTACK_VERSION: ${CLOUDSTACK_VERSION:-4.21}
+    image: cloudstack:${CLOUDSTACK_VERSION:-4.21}
+    container_name: cloudstack
+    hostname: cloudstack
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_PASSWORD: ${DB_PASSWORD:-cloud}
+      DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      # MANAGEMENT_SERVER_IP: 127.0.0.1
+    volumes:
+      - cloudstack-data:/var/lib/cloudstack
+      - cloudstack-logs:/var/log/cloudstack
+    ports:
+      - "8080:8080" # Management UI
+      - "8250:8250" # Cluster management
+      - "8251:8251" # System VM communication
+      - "9090:9090" # Integration API
+      - "8096:8096" # Usage server
+    restart: unless-stopped
+    privileged: true
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql-data:
+    driver: local
+  cloudstack-data:
+    driver: local
+  cloudstack-logs:
+    driver: local
