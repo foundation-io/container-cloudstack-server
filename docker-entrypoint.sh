@@ -65,6 +65,10 @@ else
     fi
 fi
 
+# Make necessary directories (supervisord wants log directories for example)
+mkdir -p /var/log/cloudstack/management
+mkdir -p /var/log/cloudstack/usage
+
 echo "Starting supervisord..."
 # Execute the CMD from Dockerfile
 exec "$@"
