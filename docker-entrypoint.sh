@@ -12,6 +12,11 @@ echo "CloudStack Docker Entrypoint Starting..."
 echo "Database Host: ${DB_HOST}:${DB_PORT}"
 echo "Management Server IP: ${MANAGEMENT_SERVER_IP}"
 
+# Set directory permissions
+for d in $(echo /etc/cloudstack/management /etc/cloudstack/usage /var/cloudstack /var/cloudstack/management /var/lib/cloudstack /var/lib/cloudstack/management); do
+    mkdir -p ${d} && chown root:cloud ${d} && chmod u+rwx,g+rwx ${d}
+done
+
 # Wait for MySQL to be ready and accepting connections
 echo "Waiting for MySQL at ${DB_HOST}:${DB_PORT} to be ready..."
 max_attempts=60

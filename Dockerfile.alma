@@ -1,6 +1,6 @@
 FROM almalinux:9.6
 
-ARG CLOUDSTACK_VERSION=4.21
+ARG CLOUDSTACK_VERSION=4.22
 
 ENV CLOUDSTACK_VERSION=${CLOUDSTACK_VERSION}
 
@@ -24,16 +24,9 @@ RUN dnf -y install epel-release && \
     dnf clean all
 
 # Add CloudStack repository and install
-# NOTE: Workaround for cloudstack-common installation on aarch64 is to manually
-# install the package and instruct rpm to not check/require dependencies.
-# Please see https://github.com/apache/cloudstack/pull/10057
-# for notes and details about the issue and workaround.
-# Likely this will be fixed in 4.22; we shall wait and see.
 COPY cloudstack.repo /etc/yum.repos.d/cloudstack.repo
 RUN sed -i -e "s/VERSION/${CLOUDSTACK_VERSION}/g" /etc/yum.repos.d/cloudstack.repo && \
-    dnf download cloudstack-common && \
-    rpm -ivh --nodeps ./cloudstack-common*.rpm && rm ./cloudstack-common*.rpm && \
-    dnf -y install cloudstack-management cloudstack-usage && \
+    dnf -y install cloudstack-management cloudstack-usage cloudstack-common && \
     dnf clean all
 
 # Create necessary directories

@@ -11,7 +11,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: foundation-io/cloudstack-server
-  CLOUDSTACK_VERSION: "4.21"
+  CLOUDSTACK_VERSION: "4.22"
   DOCKER_FILE: Dockerfile.alma
 
 jobs:
