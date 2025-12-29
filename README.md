@@ -42,7 +42,7 @@ Environment variables can be set in `.env` file:
 
 ```bash
 # CloudStack version
-CLOUDSTACK_VERSION=4.21
+CLOUDSTACK_VERSION=4.22
 
 # Database configuration
 DB_HOST=mysql

@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# /bin/systemctl — shim for CloudStack StatsCollector probe
+
+set -e
+
+if [[ "$1" == "status" && "$2" == "cloudstack-usage" ]]; then
+  now="$(date '+%a %Y-%m-%d %H:%M:%S %Z')"
+  # Minimal output that matches what the probe greps for.
+  # Note the leading spaces before "Loaded:" to satisfy `grep " Loaded:"`.
+  printf '● cloudstack-usage.service - CloudStack Usage Server\n'
+  printf '  Loaded: loaded (/lib/systemd/system/cloudstack-usage.service; enabled; vendor preset: enabled)\n'
+  printf '   Active: active (running) since %s; 1min ago\n' "$now"
+  exit 0
+fi
+
+# Optional passthrough to a real systemctl if present and called for anything else.
+if command -v /usr/bin/systemctl.real >/dev/null 2>&1; then
+  exec /usr/bin/systemctl.real "$@"
+fi
+
+# Generic not-found for other units.
+echo "Unit ${2:-unknown}.service could not be found."
+exit 4

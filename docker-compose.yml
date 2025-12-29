@@ -39,8 +39,8 @@ services:
       context: .
       dockerfile: Dockerfile.alma
       args:
-        CLOUDSTACK_VERSION: ${CLOUDSTACK_VERSION:-4.21}
-    image: cloudstack:${CLOUDSTACK_VERSION:-4.21}
+        CLOUDSTACK_VERSION: ${CLOUDSTACK_VERSION:-4.22}
+    image: cloudstack:${CLOUDSTACK_VERSION:-4.22}
     container_name: cloudstack
     hostname: cloudstack
     environment:
